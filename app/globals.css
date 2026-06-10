@@ -1,5 +1,13 @@
 :root {
-  --background: #f5f1e8;
+  --bg: #f5f1e8;
+  --env-body: #c4b78f;
+  --env-flap: #efe8cf;
+  --env-pocket: #e9e1c6;
+  --env-side: #d8cfb0;
+  --ink: #2c2620;
+  --muted: #5a5147;
+  --accent: #c65d3a;
+  --s: 1; /* default scene size scale (overridden on .envelope) */
 }
 
 * {
@@ -14,102 +22,410 @@ body {
 
 body {
   min-height: 100vh;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
   background:
     radial-gradient(circle at top left, rgba(198, 93, 58, 0.18), transparent 30%),
     radial-gradient(circle at bottom right, rgba(17, 17, 17, 0.08), transparent 25%),
-    var(--background);
+    var(--bg);
+}
+
+/* ---- scene + sticky pin -------------------------------------------------- */
+.scene {
+  position: relative;
+}
+
+.scene-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* prefers-reduced-motion: no pin, manifesto shown as a plain readable card */
+.manifesto-static {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8vh 20px;
+}
+
+/* ---- envelope ------------------------------------------------------------ */
+/* wrapper carries the scroll-driven vertical travel (rise + settle) so it
+   never clobbers the perspective / mobile-scale on .envelope itself */
+.envelope-rise {
+  position: relative;
+  will-change: transform;
 }
 
 .envelope {
-  position: fixed;
+  --s: 1.3; /* scene size — 1 = original 560×380; bump to grow the whole scene */
+  position: relative;
+  width: calc(560px * var(--s));
+  height: calc(380px * var(--s));
+  perspective: calc(1600px * var(--s));
+  filter: drop-shadow(0 28px 45px rgba(40, 30, 15, 0.28));
+}
+
+.back-wall {
+  position: absolute;
+  inset: 0;
+  background: var(--env-body);
+  border-radius: 10px;
+  z-index: 1;
+}
+
+/* The four flaps (top/bottom/left/right) all meet at the envelope centre. */
+.side-flap {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 50%;
+  background: var(--env-side);
+  z-index: 3;
+}
+.side-flap--left {
+  left: 0;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+.side-flap--right {
+  right: 0;
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+
+.front-panel {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 50%;
+  background: var(--env-pocket);
+  clip-path: polygon(0 100%, 100% 100%, 50% 0);
+  border-radius: 0 0 10px 10px;
+  z-index: 4;
+}
+
+/* RBI seal embossed into the lower triangle. The shape is masked from the seal
+   PNG and filled with the paper colour so it reads as relief, not ink; a light
+   highlight above + dark shadow below give the pressed-in bevel. Sits between
+   the flap's resting point (envelope mid) and the bottom edge. */
+.env-emboss {
+  position: absolute;
   left: 50%;
-  top: 50%;
-  width: 950px;
-  height: 650px;
+  top: 78%;
+  width: calc(118px * var(--s));
+  height: calc(118px * var(--s));
   transform: translate(-50%, -50%);
-  perspective: 1400px;
-}
-
-.envelope-back-rect {
-  position: absolute;
-  inset: 0;
-  background: #BDB393;
-  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.28);
-  z-index: 1;
-}
-
-.envelope-top-flap {
-  position: absolute;
-  left: 0;
-  top: 488px;
-  width: 950px;
-  height: 487.5px;
-  z-index: 5;
-  perspective: 1400px;
-  transform-style: preserve-3d;
-}
-
-.envelope-top-triangle {
-  position: absolute;
-  inset: 0;
-  background: #f2ecd3;
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  z-index: 2;
-  transform-origin: center top;
-  transform: scaleY(-1);
-}
-
-.envelope-top-triangle-shadow {
-  position: absolute;
-  left: 0;
-  top: -482px;
-  width: 950px;
-  height: 487.5px;
+  z-index: 5; /* above the front panel (4), below the flap (6) */
   pointer-events: none;
-  z-index: 1;
-  transform-origin: center top;
+  /* translucent ink-brown so the fine seal lines register on the paper... */
+  background-color: rgba(92, 70, 32, 0.5);
+  mix-blend-mode: multiply; /* ...and read as pressed into it, not printed on */
+  -webkit-mask: url(/rbi-seal.png) center / contain no-repeat;
+  mask: url(/rbi-seal.png) center / contain no-repeat;
+  /* light highlight below + dark shadow above = a debossed (pressed-in) bevel */
+  filter:
+    drop-shadow(0 calc(1px * var(--s)) calc(1px * var(--s)) rgba(255, 253, 246, 0.85))
+    drop-shadow(0 calc(-1px * var(--s)) calc(1px * var(--s)) rgba(58, 44, 18, 0.5));
 }
 
-.envelope-top-triangle-shadow-svg {
+.flap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 60%; /* taller so the long V-point extends past centre, over the lower flap */
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  z-index: 6;
+}
+
+/* two stacked faces; folding past vertical hides the front and reveals the back */
+.flap-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.flap-face--back {
+  transform: rotateY(180deg);
+}
+
+.flap-svg {
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
 }
 
-.envelope-front-group {
+.flap-face--front .flap-svg polygon {
+  fill: var(--env-flap); /* front face */
+}
+
+.flap-face--back .flap-svg polygon {
+  fill: #c1b692; /* underside, revealed once the flap folds open */
+}
+
+.flap-shadow {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 56%;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0));
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* ---- letter -------------------------------------------------------------- */
+.letter {
+  position: absolute;
+  left: calc(50px * var(--s)); /* (560 - 460) / 2 — centred without a transform */
+  top: calc(18px * var(--s));
+  width: calc(460px * var(--s));
+  height: calc(360px * var(--s));
+  font-size: calc(16px * var(--s)); /* base unit; text below scales from here */
+  background: linear-gradient(180deg, #fffdf7, #f7f1e4);
+  border-radius: calc(6px * var(--s));
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
   z-index: 2;
-  box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.12);
 }
 
-.envelope-back-triangle {
+/* reduced-motion: letter flows normally as a standalone card */
+.letter--flat {
+  position: static;
+  width: min(460px, 92vw);
+  height: auto;
+  margin: 0;
+}
+
+.letter-content {
+  padding: calc(30px * var(--s)) calc(38px * var(--s));
+}
+
+.letter .eyebrow {
+  margin: 0 0 calc(8px * var(--s));
+  font-size: calc(12px * var(--s));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.letter h1 {
+  margin: 0 0 calc(14px * var(--s));
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: calc(34px * var(--s));
+  line-height: 1.1;
+}
+
+.letter .lede {
+  margin: 0 0 calc(18px * var(--s));
+  font-size: calc(16px * var(--s));
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.letter .tenets {
+  margin: 0;
+  padding-left: calc(18px * var(--s));
+  display: grid;
+  gap: calc(8px * var(--s));
+  font-size: calc(14px * var(--s));
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+/* ---- scroll hint --------------------------------------------------------- */
+.scroll-hint {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 630px;
-  height: 650px;
-  background: #E8E2C8;
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
-  transform: translateY(0);
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8a7f6b;
 }
 
-.envelope-back-triangle-left {
-  left: 0;
-  right: auto;
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
-  transform: scaleX(-1);
-  transform-origin: center;
+.scroll-hint .chevron {
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  animation: hint-bob 1.6s ease-in-out infinite;
 }
 
-.envelope-middle-parallelogram {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 950px;
-  height: 400px;
-  background: #f2ecd3;
-  clip-path: polygon(25% 0, 75% 0, 100% 100%, 0 100%);
-  z-index: 4;
-  transform-origin: center;
+@keyframes hint-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(45deg);
+  }
+  50% {
+    transform: translateY(5px) rotate(45deg);
+  }
+}
+
+/* ---- small screens ------------------------------------------------------- */
+@media (max-width: 640px) {
+  .envelope {
+    --s: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint .chevron {
+    animation: none;
+  }
+}
+
+/* ---- gold-foil guilloche background -------------------------------------- */
+.foil {
+  position: fixed;
+  inset: 0;
+  z-index: -1; /* above the body gradient, behind the scene + nav */
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.foil-base {
+  opacity: 0.2; /* dim gold pattern; the masked shine brightens left/right */
+}
+
+/* ---- gold-foil guilloche medallions (edge-anchored semicircles) ---------- */
+/* A fixed, viewport-sized box that clips its own absolutely-positioned discs.
+   This keeps the off-screen halves from spawning a scrollbar WITHOUT putting
+   overflow on the scroll root (which would make body the scroller and freeze
+   every useScroll-driven animation on the page). */
+.foil-medallions {
+  position: fixed;
+  inset: 0;
+  z-index: -1; /* behind the scene, above the body gradient */
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.foil-medallion-wrap {
+  pointer-events: none;
+}
+
+.foil-medallion {
+  display: block;
+  filter: drop-shadow(0 6px 14px rgba(120, 90, 25, 0.22));
+  will-change: transform;
+}
+
+/* ---- RBIH site nav ------------------------------------------------------- */
+.site-nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 100;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  color: #2e2e2e;
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.nav-mark {
+  color: #2e2e2e;
+  flex: none;
+}
+
+.nav-wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.04;
+}
+
+.nav-wordmark-top {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2e2e2e;
+}
+
+.nav-wordmark-bottom {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent); /* RBIH red */
+}
+
+.nav-hiring {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #d6f08c;
+  color: #2e2e2e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-hiring-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #57a83a;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav-links a {
+  color: #2e2e2e;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.nav-links a:hover {
+  color: var(--accent);
+}
+
+/* no mobile menu yet — keep the bar from overflowing on small screens */
+@media (max-width: 640px) {
+  .nav-hiring,
+  .nav-links {
+    display: none;
+  }
 }

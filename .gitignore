@@ -1,3 +1,11 @@
 .next
 node_modules
 package-lock.json
+
+# editor
+.idea
+
+# dev / visual-testing artifacts
+shots
+dev.log
+*.tsbuildinfo
