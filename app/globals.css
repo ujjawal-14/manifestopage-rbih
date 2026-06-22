@@ -1,13 +1,57 @@
 :root {
   --bg: #f5f1e8;
-  --env-body: #c4b78f;
-  --env-flap: #efe8cf;
-  --env-pocket: #e9e1c6;
-  --env-side: #d8cfb0;
+  /* rustic aged-kraft envelope — warm sepia tones, stepped light->dark so the
+     separate flaps still read against each other (body darkest base ->
+     flap front lightest). underside of the flap: --env-flap-back below. */
+  --env-body: #5C1F0F; /* back wall / base */
+  --env-side: #752B17; /* left+right side flaps */
+  --env-pocket: #6E2816; /* lower front panel (pocket) */
+  --env-flap: #612212; /* top flap, front face */
+  --env-flap-back: #5C1F0F; /* top flap, underside (revealed when open) */
   --ink: #2c2620;
   --muted: #5a5147;
   --accent: #c65d3a;
   --s: 1; /* default scene size scale (overridden on .envelope) */
+
+  /* Metallic gold foil: a diagonal gradient banding dark gold -> bright
+     near-white highlights -> dark gold, so it reads as foil catching light
+     rather than a flat fill. Shared by the seal emboss + the foil medallions. */
+  --gold-foil: linear-gradient(
+    135deg,
+    #6f5018 0%,
+    #b1842c 14%,
+    #f7e7a6 30%,
+    #d8b14e 44%,
+    #fff6d8 56%,
+    #cda23c 70%,
+    #9a721f 86%,
+    #6f5018 100%
+  );
+  /* deeper, more bronze variant for the seal so it contrasts the light-tan
+     pocket it sits on (the bright --gold-foil blends into the tan). */
+  --gold-foil-deep: linear-gradient(
+    135deg,
+    #2e1f08 0%,
+    #6e4f16 15%,
+    #c69a32 30%,
+    #ecd388 44%,
+    #a9781f 58%,
+    #d8ad44 72%,
+    #5c4112 88%,
+    #2e1f08 100%
+  );
+
+  /* RBIH brand typeface (loaded in layout.tsx): Anek Latin for everything —
+     UI, body, and the headline — mirroring rbihub.in. */
+  --font-sans: "Anek Latin", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+
+  /* Paper grain: a tiled fractal-noise SVG (greyscale, centred ~0.5) layered
+     over each envelope surface with background-blend-mode: overlay, so it adds
+     light + dark fibres without shifting the base colour. Tune the look with
+     the rect's opacity (grain strength) and feTurbulence baseFrequency (fibre
+     size); .paper-* surfaces draw it via background-blend-mode + size below. */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.85'/%3E%3C/svg%3E");
 }
 
 * {
@@ -23,12 +67,97 @@ body {
 body {
   min-height: 100vh;
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   background:
     radial-gradient(circle at top left, rgba(198, 93, 58, 0.18), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(17, 17, 17, 0.08), transparent 25%),
     var(--bg);
+}
+
+/* ---- main hero (pinned image + manifesto; next section tears up over it) -- */
+/* the hero pins while "Where India stands today" scrolls up over it; the
+   .reveal wrapper bounds the pin to that pair so it releases before postcards */
+.main-section {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  /* behind the postcards photo (z-index -1) so the pinned hero never shows in
+     the postcards section; the cream .progress-bg still covers it above */
+  z-index: -2;
+  overflow: hidden;
+}
+
+/* scroll-scrubbed video fills the hero */
+.main-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* left-weighted dark scrim over the video keeps the text legible */
+.main-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(20, 14, 26, 0.6) 0%,
+    rgba(20, 14, 26, 0.34) 42%,
+    rgba(20, 14, 26, 0) 72%
+  );
+  pointer-events: none;
+}
+
+/* 24-col frame margins so the text lines up with the rest of the page;
+   position/z-index keep the manifesto text above the photo layer */
+/* 24-col frame margins so the text lines up with the rest of the page;
+   position/z-index keep the manifesto text above the photo layer */
+.main-inner {
+  position: relative;
+  z-index: 1;
+  width: min(1920px, 100vw);
+  margin-inline: auto;
+  padding-inline: calc(min(1920px, 100vw) * 0.15625); /* 300 / 1920 */
+}
+
+.main-manifesto {
+  margin: 0;
+  max-width: min(1100px, 100%);
+  font-family: var(--font-sans); /* Anek Latin */
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: #fff;
+  text-shadow: 0 1px 18px rgba(20, 14, 26, 0.45);
+  text-align: left;
+  position: relative; /* above the section background */
+}
+
+/* purpose statement below the manifesto — Sentient */
+.main-purpose {
+  margin-top: clamp(28px, 4vh, 52px);
+  max-width: min(680px, 100%);
+  font-family: "Sentient", var(--font-sans);
+  text-align: left;
+}
+.main-purpose-title {
+  margin: 0 0 clamp(10px, 1.4vh, 16px);
+  font-size: clamp(18px, 1.5vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+  text-shadow: 0 1px 16px rgba(20, 14, 26, 0.45);
+}
+.main-purpose-body {
+  margin: 0;
+  font-size: clamp(16px, 1.35vw, 20px);
+  font-weight: 400;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.86);
+  text-shadow: 0 1px 16px rgba(20, 14, 26, 0.5);
 }
 
 /* ---- scene + sticky pin -------------------------------------------------- */
@@ -43,16 +172,46 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  /* no overflow clip here: it would shear off the envelope's drop-shadow at the
+     bottom edge (a hard line as the hero scrolls toward the postcards). The
+     off-screen foil-medallion halves are clipped by .foil-medallions itself. */
 }
 
 /* prefers-reduced-motion: no pin, manifesto shown as a plain readable card */
 .manifesto-static {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 6vh;
   padding: 8vh 20px;
+}
+
+/* Tagline pinned to the top-centre of the hero, framing the envelope below. */
+.manifesto-quote {
+  position: absolute;
+  top: calc(170px + 5vh); /* clear of the fixed nav (56px) */
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, 88vw);
+  margin: 0;
+  text-align: center;
+  font-family: "Sentient", var(--font-sans);
+  font-size: clamp(18px, 2.5vw, 28px);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.005em;
+  text-wrap: balance;
+  color: #111;
+  z-index: 0 ; /* above the rising envelope */
+  pointer-events: none;
+}
+
+/* in the reduced-motion layout it flows in the stacked column, not pinned */
+.manifesto-quote--static {
+  position: static;
+  transform: none;
 }
 
 /* ---- envelope ------------------------------------------------------------ */
@@ -69,13 +228,16 @@ body {
   width: calc(560px * var(--s));
   height: calc(380px * var(--s));
   perspective: calc(1600px * var(--s));
-  filter: drop-shadow(0 28px 45px rgba(40, 30, 15, 0.28));
+  filter: drop-shadow(0 20px 40px rgba(40, 30, 15, 0.16));
 }
 
 .back-wall {
   position: absolute;
   inset: 0;
-  background: var(--env-body);
+  background-color: var(--env-body);
+  background-image: var(--paper-grain);
+  background-size: 180px 180px;
+  background-blend-mode: overlay;
   border-radius: 10px;
   z-index: 1;
 }
@@ -86,7 +248,10 @@ body {
   top: 0;
   height: 100%;
   width: 50%;
-  background: var(--env-side);
+  background-color: var(--env-side);
+  background-image: var(--paper-grain);
+  background-size: 180px 180px;
+  background-blend-mode: overlay;
   z-index: 3;
 }
 .side-flap--left {
@@ -104,34 +269,39 @@ body {
   bottom: 0;
   width: 100%;
   height: 50%;
-  background: var(--env-pocket);
+  background-color: var(--env-pocket);
+  background-image: var(--paper-grain);
+  background-size: 180px 180px;
+  background-blend-mode: overlay;
   clip-path: polygon(0 100%, 100% 100%, 50% 0);
   border-radius: 0 0 10px 10px;
   z-index: 4;
 }
 
-/* RBI seal embossed into the lower triangle. The shape is masked from the seal
-   PNG and filled with the paper colour so it reads as relief, not ink; a light
-   highlight above + dark shadow below give the pressed-in bevel. Sits between
-   the flap's resting point (envelope mid) and the bottom edge. */
+/* RBI seal as a gold-foil stamp on the lower triangle. The seal PNG masks a
+   diagonal metallic-gold gradient (dark -> bright highlight bands -> dark) so
+   it reads as real foil catching the light; a soft dark drop-shadow lifts it
+   off the paper and a faint warm glow gives it sheen. */
 .env-emboss {
   position: absolute;
   left: 50%;
   top: 78%;
-  width: calc(118px * var(--s));
-  height: calc(118px * var(--s));
+  width: calc(94px * var(--s)); /* 20% smaller than the original 118px */
+  height: calc(94px * var(--s));
   transform: translate(-50%, -50%);
   z-index: 5; /* above the front panel (4), below the flap (6) */
   pointer-events: none;
-  /* translucent ink-brown so the fine seal lines register on the paper... */
-  background-color: rgba(92, 70, 32, 0.5);
-  mix-blend-mode: multiply; /* ...and read as pressed into it, not printed on */
+  background-image: var(--gold-foil-deep);
+  background-size: 300% 300%; /* oversized so background-position can pan the highlight across */
+  background-repeat: no-repeat;
   -webkit-mask: url(/rbi-seal.png) center / contain no-repeat;
   mask: url(/rbi-seal.png) center / contain no-repeat;
-  /* light highlight below + dark shadow above = a debossed (pressed-in) bevel */
+  /* stronger dark halo to lift the seal off the tan pocket + bump contrast so
+     the fine relief lines stay legible against the warm background */
   filter:
-    drop-shadow(0 calc(1px * var(--s)) calc(1px * var(--s)) rgba(255, 253, 246, 0.85))
-    drop-shadow(0 calc(-1px * var(--s)) calc(1px * var(--s)) rgba(58, 44, 18, 0.5));
+    drop-shadow(0 calc(1px * var(--s)) calc(2px * var(--s)) rgba(40, 28, 8, 0.65))
+    drop-shadow(0 0 calc(1px * var(--s)) rgba(40, 28, 8, 0.55))
+    contrast(1.18) saturate(1.1);
 }
 
 .flap {
@@ -145,29 +315,27 @@ body {
   z-index: 6;
 }
 
-/* two stacked faces; folding past vertical hides the front and reveals the back */
+/* two stacked faces; folding past vertical hides the front and reveals the back.
+   shape (flat top -> stepped sides -> long V-point past centre) comes from
+   clip-path in %, matching the old SVG polygon so it stays responsive; the
+   paper grain layers over each face's fill via background-blend-mode. */
 .flap-face {
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
+  clip-path: polygon(0 0, 100% 0, 95.83% 50%, 50% 100%, 4.17% 50%);
+  background-image: var(--paper-grain);
+  background-size: 180px 180px;
+  background-blend-mode: overlay;
+}
+
+.flap-face--front {
+  background-color: var(--env-flap); /* front face */
 }
 
 .flap-face--back {
+  background-color: var(--env-flap-back); /* underside, revealed once the flap folds open */
   transform: rotateY(180deg);
-}
-
-.flap-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.flap-face--front .flap-svg polygon {
-  fill: var(--env-flap); /* front face */
-}
-
-.flap-face--back .flap-svg polygon {
-  fill: #c1b692; /* underside, revealed once the flap folds open */
 }
 
 .flap-shadow {
@@ -190,7 +358,9 @@ body {
   width: calc(460px * var(--s));
   height: calc(360px * var(--s));
   font-size: calc(16px * var(--s)); /* base unit; text below scales from here */
-  background: linear-gradient(180deg, #fffdf7, #f7f1e4);
+  background-image: var(--paper-grain), linear-gradient(180deg, #fffdf7, #f7f1e4);
+  background-size: 180px 180px, cover;
+  background-blend-mode: overlay, normal;
   border-radius: calc(6px * var(--s));
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
   z-index: 2;
@@ -219,8 +389,9 @@ body {
 
 .letter h1 {
   margin: 0 0 calc(14px * var(--s));
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-sans); /* Anek Latin, matching RBIH's heading style */
   font-size: calc(34px * var(--s));
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -276,10 +447,1029 @@ body {
   }
 }
 
+/* ---- "Where India stands today" -> data-card swipe scene ----------------- */
+/* tall section + sticky stage; scroll slides the text off left, then swipes a
+   stack of three data cards left one by one (see ProgressScene). */
+.progress-scene {
+  position: relative;
+  z-index: 1; /* above the pinned hero, so it scrolls up over it */
+}
+
+.progress-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden; /* clip the text + cards as they slide off to the left */
+}
+
+/* the cream sheet + content, clipped into view as the scroll unrolls. The
+   clip-path is driven by scroll (bottom-left -> top-right). The leading diagonal
+   edge casts a soft shadow up-right onto the pinned hero still showing through. */
+.progress-clip {
+  position: absolute;
+  inset: 0;
+  filter: drop-shadow(5px -5px 12px rgba(20, 14, 26, 0.4));
+  will-change: clip-path;
+}
+
+/* full-bleed cream paper behind the content */
+.progress-paper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--bg);
+  background-image: var(--paper-grain);
+  background-size: 200px 200px;
+  background-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* the rolled-up paper as a fat 3D cylinder riding the leading diagonal edge.
+   The cross-axis gradient (which becomes perpendicular to the tube after the
+   45° rotation) simulates a curved surface lit from the back/top: a deep shadow
+   at the back lip, a bright crest, the cream body, then the underside falling
+   into the shadow it casts on the freshly-revealed page. */
+.progress-roll {
+  position: absolute;
+  width: 260vmax;
+  height: 104px;
+  /* angle matches the clip edge's true on-screen angle (set per viewport) so
+     the tube lies exactly on the seam between the sheet and the hero */
+  transform: translate(-50%, -50%) rotate(var(--roll-angle, 33deg));
+  transform-origin: center;
+  border-radius: 52px / 52px;
+  background-color: var(--bg);
+  background-image:
+    var(--paper-grain),
+    linear-gradient(
+      to bottom,
+      rgba(20, 14, 26, 0.5) 0%,
+      rgba(140, 110, 78, 0.55) 9%,
+      #efe7d6 22%,
+      #fffaf0 33%,
+      #f4ecdd 46%,
+      #ddd0b6 62%,
+      rgba(122, 92, 60, 0.6) 82%,
+      rgba(20, 14, 26, 0.55) 100%
+    );
+  background-size: 160px 160px, 100% 100%;
+  background-blend-mode: overlay, normal;
+  /* the cylinder's own soft cast shadow onto the revealed paper below it */
+  box-shadow:
+    0 30px 44px -8px rgba(20, 14, 26, 0.5),
+    0 6px 14px rgba(20, 14, 26, 0.35);
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* 24-column frame matching the Figma layout grid (frame 1920, margin 300,
+   gutter 16) — same math as GridOverlay, so content lands on the columns. */
+.progress-grid {
+  --frame: min(1920px, 100vw);
+  --margin: calc(var(--frame) * 0.15625); /* 300 / 1920 */
+  --gutter: calc(var(--frame) * 0.00833333); /* 16 / 1920 */
+  --col: calc((var(--frame) - 2 * var(--margin) - 23 * var(--gutter)) / 24);
+  --block12: calc(12 * var(--col) + 11 * var(--gutter));
+  /* x-offset that centres the 12-col text block during the highlight phase */
+  --center-offset: calc(var(--frame) / 2 - var(--margin) - var(--block12) / 2);
+  width: var(--frame);
+  height: 100%;
+  margin-inline: auto;
+  padding-inline: var(--margin);
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  column-gap: var(--gutter);
+  align-items: center;
+  position: relative;
+  z-index: 1; /* above the cream paper layer */
+}
+
+/* "Where India stands today" — pinned to the first 12 columns; translated to
+   centre during the highlight phase, then settles left (--shift 1 -> 0). */
+.progress-text {
+  grid-column: 1 / span 12;
+  transform: translateX(calc(var(--center-offset) * var(--shift, 1)));
+  z-index: 5;
+}
+
+.progress-text .standing-inner {
+  width: 100%;
+}
+
+/* data cards — columns 14–24 (11 wide), one card visible at a time.
+   grid line 25 = the right edge of column 24, so 14 / 25 spans cols 14–24. */
+.progress-cards-col {
+  grid-column: 14 / 25;
+  align-self: center;
+  position: relative;
+  --shadow-room-y: 52px; /* vertical breathing room for the shadow (each side) */
+  /* the card matches the left text block's measured height (--card-h); the
+     column adds room above & below so the drop-shadow isn't clipped */
+  height: calc(var(--card-h, 380px) + 2 * var(--shadow-room-y));
+  z-index: 1;
+}
+
+/* lead-in label sits just above the card, centred over it */
+.progress-cards-col .progress-header {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% - var(--shadow-room-y) + 6px);
+  width: auto;
+  text-align: center;
+  font-size: clamp(18px, 1.5vw, 24px);
+  z-index: 4; /* above the top pocket-fade rectangle (z-index 3) */
+}
+
+/* the single-card window; the track inside it is 3 cards tall and slides up.
+   Clipped exactly to columns 14–24 so the card never spills outside the grid. */
+.cards-viewport {
+  position: absolute;
+  inset: 0; /* fills the column (14–24) = the clip window */
+  overflow: hidden;
+}
+
+/* faded "pocket" rectangles at the top & bottom of the card window: each card
+   (and its top/bottom shadow) dissolves into the page as it slides in/out, like
+   sliding into a slot. They sit above the cards; the left/right sides are left
+   clear so the card's side shadow still shows. */
+.cards-viewport::before,
+.cards-viewport::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 72px;
+  z-index: 3;
+  pointer-events: none;
+}
+.cards-viewport::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--bg), transparent);
+}
+.cards-viewport::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--bg), transparent);
+}
+
+.cards-track {
+  position: relative;
+  height: 100%; /* = one card window; the slots below overflow and get clipped */
+  display: flex;
+  flex-direction: column;
+}
+
+/* each slot is one window tall (one visible at a time); the card sits centred
+   inside it, shorter than the slot, so its top/bottom shadow shows in the gap
+   without the neighbouring card peeking through. */
+.card-slot {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-slot .data-card {
+  width: 100%;
+  height: calc(100% - 2 * var(--shadow-room-y)); /* = --card-h (matches the text) */
+}
+
+/* stack the two columns on narrow screens so neither gets crushed */
+@media (max-width: 860px) {
+  .progress-grid {
+    display: block;
+    padding-inline: 24px;
+    width: 100%;
+  }
+  .progress-text {
+    transform: none;
+    margin-bottom: 4vh;
+  }
+}
+
+/* reduced-motion fallback: plain stacked layout, no pin */
+.progress-static {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7vh;
+  padding: 14vh 24px;
+}
+
+.progress-header {
+  margin: 0;
+  width: min(900px, 92vw);
+  text-align: center;
+  font-size: clamp(20px, 2.6vw, 30px);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.standing-inner {
+  width: min(680px, 92vw);
+}
+
+.standing-title {
+  margin: 0 0 clamp(20px, 3vw, 32px);
+  font-size: clamp(28px, 4.5vw, 46px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.standing-inner p {
+  margin: 0 0 clamp(16px, 2.2vw, 24px);
+  font-size: clamp(17px, 1.7vw, 21px);
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.standing-inner p:last-child {
+  margin-bottom: 0;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* highlighter wipe over key phrases: a thick light-blue marker band revealed
+   left-to-right as --hl goes 0 -> 1 (driven by scroll). Semi-transparent so the
+   text stays readable; box-decoration-break keeps it intact across line wraps. */
+.hl {
+  background-image: linear-gradient(
+    rgba(150, 205, 105, 0.55),
+    rgba(150, 205, 105, 0.55)
+  );
+  background-repeat: no-repeat;
+  background-size: calc(var(--hl, 0) * 100%) 1.05em;
+  background-position: 0 center;
+  border-radius: 2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* ordinal suffix (e.g. the "th" in 134th) raised as a small superscript */
+.ordinal {
+  font-size: 0.62em;
+  vertical-align: super;
+  line-height: 0; /* don't let the raised text stretch the line box */
+}
+
+/* ---- data cards (stacked + swiped in the progress scene) ----------------- */
+.card-stack {
+  position: relative;
+  width: min(520px, 86vw);
+  height: min(480px, 66vh);
+}
+
+.data-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.8vh, 18px);
+  padding: clamp(14px, 1.8vw, 22px);
+  background: #ffffff; /* white so it reads clearly against the cream page */
+  border: 1px solid rgba(40, 30, 15, 0.12);
+  border-radius: 18px;
+  /* very subtle lift off the cream page */
+  box-shadow: 0 8px 20px rgba(40, 30, 15, 0.08);
+}
+
+.data-card-chart {
+  flex: 0 1 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.data-card-caption {
+  margin: 0;
+  max-width: 44ch;
+  text-align: center;
+  font-size: clamp(15px, 1.6vw, 19px);
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* reduced-motion: cards flow in a column rather than overlapping */
+.progress-cards-static {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6vh;
+  width: min(620px, 92vw);
+}
+.progress-cards-static .data-card {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  min-height: min(480px, 70vh);
+}
+
+/* bar chart (GDP) */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(22px, 5vw, 52px);
+  height: clamp(110px, 16vh, 150px);
+}
+.bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.bar {
+  width: clamp(56px, 11vw, 88px);
+  border-radius: 5px 5px 0 0;
+}
+.bar--a {
+  background: #dca093;
+}
+.bar--b {
+  background: #c8755e;
+}
+.bar--c {
+  background: #9c3a27;
+}
+.bar-val {
+  margin-bottom: 8px;
+  font-size: clamp(12px, 1.3vw, 15px);
+  font-weight: 600;
+  color: var(--ink);
+}
+.bar-year {
+  margin-top: 10px;
+  font-size: clamp(12px, 1.3vw, 15px);
+  color: var(--muted);
+}
+.bar-year.is-now {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* pie chart (digital-payment adoption) */
+.pie {
+  width: clamp(120px, 15vw, 150px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  /* 13% lighter wedge pulled to the top-left, 87% solid green */
+  background: conic-gradient(from -47deg, #c2dd80 0 13%, #79a23f 13% 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 24px rgba(40, 30, 15, 0.12);
+}
+.pie-label {
+  color: #fff;
+  font-size: clamp(28px, 4.5vw, 42px);
+  font-weight: 700;
+}
+
+/* dot grid (UPI vs all other payment modes) */
+.dot-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.dot-grid {
+  display: grid;
+  gap: clamp(3px, 0.7vw, 6px);
+}
+.dot {
+  width: clamp(7px, 1.1vw, 12px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #7d5ec9; /* UPI */
+}
+.dot--other {
+  background: #cdb78f; /* all other payment modes */
+}
+.dot-note {
+  font-size: clamp(11px, 1.2vw, 13px);
+  color: var(--muted);
+}
+
+/* ---- postcards (revealed below the hero, then swap on scroll) ------------- */
+/* persistent 2-line statement that sits above the postcard stack the whole
+   time; higher z-index so a swiping card passes behind it, not over it. */
+.postcards-statement {
+  margin: 0;
+  width: min(790px, 90vw);
+  text-align: center;
+  font-family: var(--font-sans); /* Anek Latin — RBIH brand typeface */
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: #fff;
+  position: relative;
+  z-index: 0;
+}
+/* tall section + sticky stage pins the stack centred while scroll drives the
+   swap (see PostcardsScene). The reduced-motion fallback uses a plain section. */
+.postcards-scene {
+  position: relative;
+}
+
+.postcards-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(28px, 5vh, 56px); /* space between the statement and the stack */
+}
+
+.postcards-static {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6vh;
+  padding: 14vh 20px;
+}
+
+/* Vidhana Soudha photo as a tall backdrop that deliberately overflows the
+   postcard scene into the neighbouring sections (--tear-overflow on each side),
+   so the ripped edges live up in the data section and down in the section
+   below. background-attachment: fixed keeps it full-bleed (correct zoom) no
+   matter how tall the element is; z-index -1 keeps it behind every section's
+   content. Layers top-to-bottom: paper grain, a light scrim, the photo. */
+.postcards-scene {
+  /* the photo rises into view during the hand-off and stops with its torn top
+     edge ~15px below the text/data-card content. The content is centred, so its
+     bottom is at 50vh + (content height / 2); --content-h is published by
+     ProgressScene from the measured text block (falls back to 440px). */
+  --tear-overflow-top: calc(50vh - var(--content-h, 440px) / 2 - 15px);
+  --tear-overflow-bottom: 8vh; /* only a little into the section below, so the photo + tear end inside its top padding, before the content starts */
+}
+.postcards-photo {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  top: calc(-1 * var(--tear-overflow-top));
+  bottom: calc(-1 * var(--tear-overflow-bottom));
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    var(--paper-grain),
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+    url("/stamp-document.png");
+  background-size: 180px 180px, cover, cover;
+  background-position: center, center 38%, center 38%;
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-attachment: fixed, fixed, fixed;
+  background-blend-mode: overlay, normal, normal;
+}
+
+/* reduced-motion static variant keeps a simple (non-overflowing) backdrop */
+.postcards-static {
+  background-image:
+    var(--paper-grain),
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+    url("/stamp-document.png");
+  background-size: 180px 180px, cover, cover;
+  background-position: center, center 38%, center 38%;
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-blend-mode: overlay, normal, normal;
+}
+
+/* ripped-paper bands at the photo's top & bottom edges (which sit out in the
+   neighbouring sections): the page's own cream paper, masked to a soft organic
+   torn edge (see tornMask in PostcardsScene.tsx), so the page reads as torn
+   open to reveal the photo. A brighter "lip" layer pokes a few px past the
+   cream for the pale torn-fibre rim; its drop-shadow lifts the paper off the
+   image. They sit at z-index -1 too (behind all content, above the photo). */
+.paper-tear {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 12vh;
+  z-index: -1; /* behind every section's content, just above the photo */
+  background-size: 180px 180px;
+  background-blend-mode: overlay;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  pointer-events: none;
+}
+.paper-tear--cream {
+  background-color: var(--bg);
+  background-image: var(--paper-grain);
+}
+.paper-tear--lip {
+  background-color: #fdfbf4; /* pale torn-fibre rim */
+  background-image: var(--paper-grain);
+}
+.paper-tear--top {
+  top: calc(-1 * var(--tear-overflow-top)); /* aligns with the photo's top edge */
+}
+.paper-tear--bottom {
+  bottom: calc(-1 * var(--tear-overflow-bottom)); /* aligns with the photo's bottom edge */
+}
+.paper-tear--lip.paper-tear--top {
+  filter: drop-shadow(0 7px 6px rgba(40, 30, 15, 0.3));
+}
+.paper-tear--lip.paper-tear--bottom {
+  filter: drop-shadow(0 -7px 6px rgba(40, 30, 15, 0.3));
+}
+
+/* front card sits in flow and sizes the stack; back card is offset behind it.
+   The transforms below are the resting/static look — in the animated scene
+   motion drives x/y/rotate/scale/zIndex inline and overrides them. */
+.postcard-stack {
+  position: relative;
+  width: min(896px, 92vw); /* 40% larger than the original 640px */
+}
+
+/* .postcard is an unmasked wrapper that carries the transform + drop-shadow;
+   .postcard-face (its child) carries the paper colour + perforation mask. The
+   shadow must live on the wrapper because CSS applies `filter` before `mask`,
+   so a drop-shadow on the masked element would be clipped away by its own mask.
+   On the wrapper the shadow is derived from the child's notched shape instead. */
+.postcard {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+}
+
+.postcard-face {
+  position: absolute;
+  inset: 0;
+  background-color: var(--card-bg);
+  background-image: var(--paper-grain); /* same fibre texture as the envelope */
+  background-size: 180px 180px;
+  background-blend-mode: overlay;
+  /* perforated postage-stamp edge: four mask layers, one per edge, intersected
+     so semicircular notches are bitten out only along the perimeter (the page
+     shows through them). --notch = notch radius, --perf = spacing. */
+  --notch: 7px;
+  --perf: 18px;
+  -webkit-mask:
+    radial-gradient(var(--notch) at 50% 0, #0000 97%, #000) 0 0 / var(--perf) 100% repeat-x,
+    radial-gradient(var(--notch) at 50% 100%, #0000 97%, #000) 0 100% / var(--perf) 100% repeat-x,
+    radial-gradient(var(--notch) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--perf) repeat-y,
+    radial-gradient(var(--notch) at 100% 50%, #0000 97%, #000) 100% 0 / 100% var(--perf) repeat-y;
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(var(--notch) at 50% 0, #0000 97%, #000) 0 0 / var(--perf) 100% repeat-x,
+    radial-gradient(var(--notch) at 50% 100%, #0000 97%, #000) 0 100% / var(--perf) 100% repeat-x,
+    radial-gradient(var(--notch) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--perf) repeat-y,
+    radial-gradient(var(--notch) at 100% 50%, #0000 97%, #000) 100% 0 / 100% var(--perf) repeat-y;
+  mask-composite: intersect;
+}
+
+/* thin brown centre rule splitting the card into two halves, fading out toward
+   the top + bottom edges (strongest in the middle) */
+.postcard-face::after {
+  content: "";
+  position: absolute;
+  top: 15%; /* pulled in from the edges to shorten the stroke */
+  bottom: 15%;
+  left: 50%;
+  width: 1.5px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(108, 66, 30, 0.55) 22%,
+    rgba(108, 66, 30, 0.55) 78%,
+    transparent 100%
+  );
+}
+
+/* image on the LEFT half of the front postcard — straight edges, equal padding */
+.postcard-image {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 50%; /* left half, up to the centre rule */
+  z-index: 1; /* above the masked face */
+  padding: clamp(16px, 2.2vw, 30px); /* equal padding on every side */
+}
+.postcard-image-inner {
+  position: relative;
+  overflow: hidden; /* clips the cream stamp to the image (bg side stays brown) */
+  width: 100%;
+  height: 100%;
+  /* paper grain overlaid on the per-postcard image (--postcard-img) */
+  background-image: var(--paper-grain), var(--postcard-img, url("/postcard-money.png"));
+  background-size: 180px 180px, cover;
+  background-position: center, center;
+  background-repeat: repeat, no-repeat;
+  background-blend-mode: overlay, normal;
+}
+
+/* cream stamp over the image — sits at the same spot/size as the brown stamp
+   (the image's top-left == the brown stamp's position), clipped to the image */
+.postcard-image-inner::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(60px, 8vw, 104px);
+  aspect-ratio: 1;
+  background-color: #f7f2e6; /* cream ink over the image */
+  background-image: var(--paper-grain);
+  background-size: 80px 80px;
+  background-blend-mode: overlay;
+  -webkit-mask: url(/rbi-seal.png) center / contain no-repeat;
+  mask: url(/rbi-seal.png) center / contain no-repeat;
+  opacity: 0.6;
+  transform: rotate(-9deg);
+  pointer-events: none;
+}
+
+/* copy printed on the right half of the front postcard, left-aligned */
+.postcard-copy {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%; /* right half, past the centre rule */
+  right: 0;
+  z-index: 1; /* above the masked face */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(10px, 1.4vw, 16px);
+  padding: clamp(20px, 3vw, 40px) clamp(24px, 3.4vw, 46px);
+  text-align: left;
+}
+
+.postcard-copy p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  color: #5c3a1c; /* warm brown ink on the ivory card */
+}
+
+/* faded RBI ink stamp in the top-left corner of each card: the seal PNG masks a
+   brown "ink" fill, distressed with the paper grain and printed at low opacity
+   with multiply blending + a slight tilt, so it reads as a faint hand stamp */
+.postcard-stamp {
+  position: absolute;
+  top: clamp(16px, 2.2vw, 30px); /* matches the image padding so the two stamps align */
+  left: clamp(16px, 2.2vw, 30px);
+  width: clamp(60px, 8vw, 104px);
+  aspect-ratio: 1;
+  z-index: 0; /* below the image — brown only shows where it's on the page paper */
+  pointer-events: none;
+  background-color: #6e4a28; /* faded brown stamp ink */
+  background-image: var(--paper-grain);
+  background-size: 80px 80px;
+  background-blend-mode: overlay; /* grain distresses the ink */
+  -webkit-mask: url(/rbi-seal.png) center / contain no-repeat;
+  mask: url(/rbi-seal.png) center / contain no-repeat;
+  opacity: 0.2;
+  transform: rotate(-9deg);
+  mix-blend-mode: multiply; /* ink soaks into the card paper */
+}
+
+.postcard--back {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  --card-bg: #ece0c5;
+  transform: rotate(-4deg) translate(-18px, 16px);
+  filter: drop-shadow(0 7px 16px rgba(40, 30, 15, 0.12));
+}
+
+.postcard--front {
+  position: relative;
+  z-index: 2;
+  --card-bg: #f7f0e0;
+  transform: rotate(2.5deg);
+  filter: drop-shadow(0 9px 20px rgba(40, 30, 15, 0.14));
+}
+
+/* ---- principles intro + 2x2 grid with stamp icons ------------------------ */
+.principles-intro {
+  display: flex;
+  justify-content: center;
+  padding: 16vh 24px 2vh;
+  text-align: center;
+}
+
+.principles-intro-inner {
+  width: min(760px, 92vw);
+}
+
+.principles-intro-title {
+  margin: 0 0 clamp(18px, 2.6vw, 28px);
+  font-size: clamp(26px, 3.6vw, 42px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.principles-intro-inner p {
+  margin: 0 auto clamp(14px, 1.8vw, 20px);
+  max-width: 60ch;
+  font-size: clamp(16px, 1.6vw, 20px);
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.principles-intro-inner p:last-child {
+  margin-bottom: 0;
+}
+
+.tenets {
+  display: flex;
+  justify-content: center;
+  padding: 6vh 24px 16vh;
+}
+
+.tenet-grid {
+  width: min(1000px, 94vw);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(28px, 4vw, 56px) clamp(28px, 4vw, 52px);
+}
+
+.tenet {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(16px, 2vw, 24px);
+}
+
+/* the icon's stamp: perforated masked face with a thin frame, no drop-shadow */
+.tenet-stamp {
+  flex: none;
+  position: relative;
+  width: 92px;
+  height: 92px;
+}
+
+.tenet-stamp-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5c3a1c; /* engraved ink colour for the icon */
+  background-color: #f3e8d2; /* ivory stamp paper */
+  background-image: var(--paper-grain);
+  background-size: 140px 140px;
+  background-blend-mode: overlay;
+  box-shadow: inset 0 0 0 2px rgba(92, 58, 28, 0.28); /* thin stamp frame */
+  /* perforated edge — same four-layer intersect mask as the postcards */
+  --notch: 4px;
+  --perf: 11px;
+  -webkit-mask:
+    radial-gradient(var(--notch) at 50% 0, #0000 97%, #000) 0 0 / var(--perf) 100% repeat-x,
+    radial-gradient(var(--notch) at 50% 100%, #0000 97%, #000) 0 100% / var(--perf) 100% repeat-x,
+    radial-gradient(var(--notch) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--perf) repeat-y,
+    radial-gradient(var(--notch) at 100% 50%, #0000 97%, #000) 100% 0 / 100% var(--perf) repeat-y;
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(var(--notch) at 50% 0, #0000 97%, #000) 0 0 / var(--perf) 100% repeat-x,
+    radial-gradient(var(--notch) at 50% 100%, #0000 97%, #000) 0 100% / var(--perf) 100% repeat-x,
+    radial-gradient(var(--notch) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--perf) repeat-y,
+    radial-gradient(var(--notch) at 100% 50%, #0000 97%, #000) 100% 0 / 100% var(--perf) repeat-y;
+  mask-composite: intersect;
+}
+
+.tenet-icon {
+  width: 56%;
+  height: 56%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tenet-icon--fill {
+  fill: currentColor;
+  stroke: none;
+}
+.tenet-icon text {
+  fill: currentColor;
+  stroke: none;
+  font-weight: 700;
+}
+
+.tenet-text h3 {
+  margin: 0 0 clamp(6px, 1vw, 10px);
+  font-size: clamp(19px, 2vw, 25px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.tenet-text p {
+  margin: 0;
+  font-size: clamp(14px, 1.4vw, 16px);
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* ---- site footer (rbihub.in: terracotta -> vermilion gradient) ----------- */
+.site-footer {
+  position: relative;
+  z-index: 1; /* above the fixed foil-medallion panel */
+  min-height: 40vh;
+  color: #fff;
+  /* exact RBIH footer gradient: terracotta hsl(12 44% 52%) -> vermilion 6 72% 54% */
+  background: linear-gradient(
+    to bottom right,
+    hsl(12, 44%, 52%),
+    hsl(6, 72%, 54%)
+  );
+}
+
+.footer-inner {
+  width: min(1200px, 90vw);
+  margin: 0 auto;
+  padding: clamp(48px, 6vw, 88px) 0 clamp(28px, 3vw, 44px);
+}
+
+.footer-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  text-decoration: none;
+  color: #fff;
+  margin-bottom: clamp(22px, 3vw, 34px);
+}
+.footer-mark {
+  width: 36px;
+  height: 36px;
+}
+.footer-wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+.footer-wordmark-top {
+  font-size: 19px;
+  font-weight: 600;
+}
+.footer-wordmark-bottom {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+/* description + two link columns */
+.footer-top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: clamp(28px, 4vw, 56px);
+  align-items: start;
+}
+.footer-about {
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.5;
+}
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.footer-links a {
+  font-size: clamp(15px, 1.4vw, 19px);
+  line-height: 1.1;
+  color: #fff;
+  text-decoration: none;
+  opacity: 0.95;
+  transition: opacity 0.15s ease;
+}
+.footer-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.footer-divider {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  margin: clamp(36px, 5vw, 64px) 0 clamp(24px, 3vw, 36px);
+}
+
+/* contact details | company IDs | legal links */
+.footer-bottom {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: clamp(24px, 3vw, 48px);
+  align-items: start;
+}
+
+.contact-items {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 15px;
+}
+.contact-item:hover {
+  text-decoration: underline;
+}
+.contact-icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+.contact-separator {
+  opacity: 0.85;
+  font-size: 18px;
+  line-height: 1;
+}
+.footer-address {
+  font-style: normal;
+  margin-top: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+.footer-copy {
+  margin: 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.footer-copy strong {
+  font-weight: 700;
+  font-size: 15px;
+}
+.footer-copy span {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.footer-ids {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.footer-ids .id-name {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 2px;
+}
+.footer-ids div span:last-child {
+  font-size: 14px;
+}
+
+.footer-legal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  text-align: right;
+}
+.footer-legal a {
+  font-size: 13px;
+  color: #fff;
+  text-decoration: none;
+  opacity: 0.92;
+}
+.footer-legal a:hover {
+  text-decoration: underline;
+}
+
 /* ---- small screens ------------------------------------------------------- */
 @media (max-width: 640px) {
   .envelope {
     --s: 0.6;
+  }
+  .tenet-grid {
+    grid-template-columns: 1fr; /* stack the four points on narrow screens */
+  }
+  .footer-top {
+    grid-template-columns: 1fr 1fr; /* description full width, links wrap below */
+  }
+  .footer-about {
+    grid-column: 1 / -1;
+  }
+  .footer-bottom {
+    grid-template-columns: 1fr; /* stack contact / IDs / legal */
+    gap: 28px;
+  }
+  .footer-legal {
+    align-items: flex-start;
+    text-align: left;
   }
 }
 
@@ -304,14 +1494,15 @@ body {
 }
 
 /* ---- gold-foil guilloche medallions (edge-anchored semicircles) ---------- */
-/* A fixed, viewport-sized box that clips its own absolutely-positioned discs.
-   This keeps the off-screen halves from spawning a scrollbar WITHOUT putting
-   overflow on the scroll root (which would make body the scroller and freeze
-   every useScroll-driven animation on the page). */
+/* A fixed, viewport-sized panel behind the whole site: the medallions stay put
+   as you scroll (rotating + resizing via scroll), persisting across every
+   section. Clips its own off-screen disc halves so only the semicircles show
+   and they never spawn a scrollbar — WITHOUT putting overflow on the scroll
+   root (which would make body the scroller and freeze every useScroll). */
 .foil-medallions {
   position: fixed;
   inset: 0;
-  z-index: -1; /* behind the scene, above the body gradient */
+  z-index: -1; /* behind all content, above the body gradient */
   overflow: hidden;
   pointer-events: none;
 }
@@ -341,8 +1532,7 @@ body {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .nav-left {
@@ -420,6 +1610,27 @@ body {
 
 .nav-links a:hover {
   color: var(--accent);
+}
+
+/* ---- Figma 24-column grid overlay (toggle with "G") --------------------- */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000; /* above everything, including the nav (100) */
+  pointer-events: none; /* never swallow clicks */
+  display: flex;
+  justify-content: center; /* centre the 1920 frame in the viewport */
+}
+
+.grid-overlay-frame {
+  height: 100%;
+  display: grid;
+  /* width / padding / gap / columns set inline from the JS constants */
+}
+
+.grid-overlay-col {
+  height: 100%;
+  background: rgba(255, 0, 0, 0.1); /* Figma's classic column tint */
 }
 
 /* no mobile menu yet — keep the bar from overflowing on small screens */
